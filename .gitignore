@@ -32,3 +32,5 @@ Thumbs.db
 # Keep data and figures tracked (small enough)
 # !data/*.npz
 # !figures/*.png
+libamdhip64.so.5
+libhipsolver.so.1
