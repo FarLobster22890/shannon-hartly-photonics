@@ -21,8 +21,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.colors import Normalize
 
-mp.quiet(True)
-
 print("=" * 70)
 print("Meep Material Comparison Study with Animation")
 print("=" * 70)
@@ -37,16 +35,19 @@ materials = {
 }
 
 wavelength = 1.55
-resolution = 20
-cell_size = 10
+resolution = 40  # High resolution for accuracy
+cell_size = 20   # Larger domain
+sim_duration = 50  # Longer simulation
 
 results = {}
 frames_dict = {}
 
 print(f"Configuration:")
 print(f"  Wavelength: {wavelength} µm")
-print(f"  Resolution: {resolution} pts/λ")
-print(f"  Cell: {cell_size}×{cell_size} µm")
+print(f"  Resolution: {resolution} pts/λ (high accuracy)")
+print(f"  Cell: {cell_size}×{cell_size} µm (large domain)")
+print(f"  Simulation time: {sim_duration} periods (extended)")
+print(f"  Grid points: ~{int(cell_size * resolution)**2 * 4:,} cells per material")
 print()
 
 for mat_key, mat_info in materials.items():
@@ -85,12 +86,7 @@ for mat_key, mat_info in materials.items():
     print(f"  Recording frames...", flush=True)
     sim.run(
         mp.at_every(0.5, save_frame),
-        mp.after_sources(mp.stop_when_fields_decayed(
-            dt=50,
-            c=mp.Ez,
-            pt=mp.Vector3(0, 0),
-            decay_by=1e-8
-        ))
+        until=sim_duration
     )
     
     # Get final state
