@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Meep Material Comparison Study
+Meep Material Comparison Study with Animation
 
 Compares electromagnetic field behavior across 4 materials:
 - Silicon (n=3.5)
@@ -8,8 +8,12 @@ Compares electromagnetic field behavior across 4 materials:
 - Polymer (n=1.5)
 - Vacuum (n=1.0)
 
-Uses Meep FDTD with MPI parallelization for faster computation.
-Generates field patterns, energy distribution, and animated timelapses.
+Generates:
+- Static field patterns and energy density plots
+- MP4 animations showing field evolution over time
+- Statistics summary
+
+Uses Meep FDTD with MPI parallelization.
 """
 import meep as mp
 import numpy as np
@@ -17,63 +21,40 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.colors import Normalize
 
-# Suppress Meep output
 mp.quiet(True)
 
 print("=" * 70)
-print("Meep Material Comparison Study")
+print("Meep Material Comparison Study with Animation")
 print("=" * 70)
 print()
 
 # Materials
 materials = {
-    'Silicon': {
-        'n': 3.5,
-        'label': 'Silicon (n=3.5)',
-        'color': '#1f77b4',
-    },
-    'SiN': {
-        'n': 2.0,
-        'label': 'Si₃N₄ (n=2.0)',
-        'color': '#ff7f0e',
-    },
-    'Polymer': {
-        'n': 1.5,
-        'label': 'Polymer (n=1.5)',
-        'color': '#2ca02c',
-    },
-    'Vacuum': {
-        'n': 1.0,
-        'label': 'Vacuum',
-        'color': '#d62728',
-    },
+    'Silicon': {'n': 3.5, 'label': 'Silicon (n=3.5)'},
+    'SiN': {'n': 2.0, 'label': 'Si₃N₄ (n=2.0)'},
+    'Polymer': {'n': 1.5, 'label': 'Polymer (n=1.5)'},
+    'Vacuum': {'n': 1.0, 'label': 'Vacuum'},
 }
 
-# Simulation config
-wavelength = 1.55  # µm
-resolution = 20    # pixels per wavelength
-sim_time = 50      # periods
-cell_size = 10     # µm
+wavelength = 1.55
+resolution = 20
+cell_size = 10
 
 results = {}
+frames_dict = {}
 
 print(f"Configuration:")
 print(f"  Wavelength: {wavelength} µm")
 print(f"  Resolution: {resolution} pts/λ")
-print(f"  Cell size: {cell_size}×{cell_size} µm")
-print(f"  Simulation time: {sim_time} periods")
+print(f"  Cell: {cell_size}×{cell_size} µm")
 print()
 
 for mat_key, mat_info in materials.items():
     print(f"→ {mat_info['label']}...", flush=True)
     
-    # Setup
     cell = mp.Vector3(cell_size, cell_size, 0)
-    
-    # Material
     material = mp.Medium(index=mat_info['n'])
     
-    # Source: point dipole at center
     sources = [mp.Source(
         mp.GaussianSource(
             frequency=1.0 / wavelength,
@@ -83,7 +64,6 @@ for mat_key, mat_info in materials.items():
         center=mp.Vector3(-3, 0, 0),
     )]
     
-    # Sim
     sim = mp.Simulation(
         cell_size=cell,
         sources=sources,
@@ -92,46 +72,54 @@ for mat_key, mat_info in materials.items():
         symmetries=[mp.Mirror(mp.Y)],
     )
     
-    # Run
-    print(f"  Running...", flush=True)
-    sim.run(mp.after_sources(mp.stop_when_fields_decayed(
-        dt=50,
-        c=mp.Ez,
-        pt=mp.Vector3(0, 0),
-        decay_by=1e-8
-    )))
+    # Capture frames during simulation
+    frames = []
+    frame_times = []
     
-    # Extract fields
-    eps = np.array(sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric))
-    Ez = np.array(sim.get_array(center=mp.Vector3(), size=cell, component=mp.Ez))
+    def save_frame(sim):
+        Ez = np.array(sim.get_array(center=mp.Vector3(), size=cell, component=mp.Ez))
+        frames.append(Ez.copy())
+        frame_times.append(sim.meep_time())
+    
+    # Run and capture frames every 0.5 time units
+    print(f"  Recording frames...", flush=True)
+    sim.run(
+        mp.at_every(0.5, save_frame),
+        mp.after_sources(mp.stop_when_fields_decayed(
+            dt=50,
+            c=mp.Ez,
+            pt=mp.Vector3(0, 0),
+            decay_by=1e-8
+        ))
+    )
+    
+    # Get final state
+    Ez_final = np.array(sim.get_array(center=mp.Vector3(), size=cell, component=mp.Ez))
     Hx = np.array(sim.get_array(center=mp.Vector3(), size=cell, component=mp.Hx))
     Hy = np.array(sim.get_array(center=mp.Vector3(), size=cell, component=mp.Hy))
-    
-    # Energy
-    energy_density = 0.5 * (np.abs(Ez)**2 + np.abs(Hx)**2 + np.abs(Hy)**2)
+    energy_density = 0.5 * (np.abs(Ez_final)**2 + np.abs(Hx)**2 + np.abs(Hy)**2)
     
     results[mat_key] = {
-        'Ez': Ez,
-        'Hx': Hx,
-        'Hy': Hy,
+        'Ez': Ez_final,
         'energy': energy_density,
-        'eps': eps,
-        'max_E': np.max(np.abs(Ez)),
+        'max_E': np.max(np.abs(Ez_final)),
         'max_H': np.max(np.sqrt(Hx**2 + Hy**2)),
         'total_energy': np.sum(energy_density),
     }
     
-    print(f"  ✓ Peak |E|: {results[mat_key]['max_E']:.3e}")
-    print()
+    frames_dict[mat_key] = frames
+    
+    print(f"  ✓ {len(frames)} frames captured, Peak |E|: {results[mat_key]['max_E']:.3e}")
 
+print()
 print("=" * 70)
-print("Generating Plots")
+print("Generating Visualizations")
 print("=" * 70)
 print()
 
-# Plot 1: Field patterns
+# Plot 1: Static field patterns
 fig1, axes1 = plt.subplots(2, 2, figsize=(14, 11))
-fig1.suptitle('E-Field Distribution', fontsize=14, fontweight='bold')
+fig1.suptitle('E-Field Distribution (Final State)', fontsize=14, fontweight='bold')
 
 axes_list = axes1.flatten()
 for idx, (mat_key, mat_info) in enumerate(materials.items()):
@@ -140,8 +128,8 @@ for idx, (mat_key, mat_info) in enumerate(materials.items()):
     
     ax = axes_list[idx]
     Ez = results[mat_key]['Ez']
-    
     vmax = np.max(np.abs(Ez))
+    
     im = ax.imshow(Ez.T, cmap='RdBu_r', origin='lower', aspect='auto',
                    vmin=-vmax, vmax=vmax)
     ax.set_title(f"{mat_info['label']}", fontweight='bold')
@@ -175,7 +163,7 @@ plt.tight_layout()
 plt.savefig('outputs/meep_material_energy.png', dpi=120, bbox_inches='tight')
 print("✓ outputs/meep_material_energy.png")
 
-# Plot 3: Statistics
+# Plot 3: Statistics table
 fig3, ax3 = plt.subplots(figsize=(12, 4))
 ax3.axis('off')
 
@@ -210,21 +198,55 @@ plt.title('Results Summary', fontweight='bold', pad=15)
 plt.savefig('outputs/meep_material_stats.png', dpi=120, bbox_inches='tight')
 print("✓ outputs/meep_material_stats.png")
 
+# Create animations
+print()
+print("Creating MP4 animations...", flush=True)
+
+for mat_key, mat_info in materials.items():
+    if mat_key not in frames_dict or len(frames_dict[mat_key]) < 2:
+        continue
+    
+    frames = frames_dict[mat_key]
+    print(f"  Animating {mat_info['label']}...", flush=True)
+    
+    # Normalize across all frames
+    all_data = np.concatenate([f.flatten() for f in frames])
+    vmax = np.max(np.abs(all_data))
+    
+    fig, ax = plt.subplots(figsize=(8, 7))
+    norm = Normalize(vmin=-vmax, vmax=vmax)
+    
+    im = ax.imshow(frames[0].T, cmap='RdBu_r', origin='lower', aspect='auto', norm=norm)
+    ax.set_xlabel('X (µm)')
+    ax.set_ylabel('Y (µm)')
+    cbar = plt.colorbar(im, ax=ax, label='Ez (V/m)')
+    title = ax.set_title(f'{mat_info["label"]} - Frame 0/{len(frames)}', fontsize=11, fontweight='bold')
+    
+    def animate(frame_num):
+        im.set_array(frames[frame_num].T)
+        title.set_text(f'{mat_info["label"]} - Frame {frame_num}/{len(frames)}')
+        return [im, title]
+    
+    anim = animation.FuncAnimation(fig, animate, frames=len(frames),
+                                  interval=100, blit=True, repeat=True)
+    
+    filename = f'outputs/meep_{mat_key.lower()}_animation.mp4'
+    anim.save(filename, writer='ffmpeg', fps=10, dpi=80)
+    plt.close(fig)
+    
+    print(f"    ✓ {filename}")
+
 print()
 print("=" * 70)
 print("Complete")
 print("=" * 70)
 print()
-print("Results:")
-for mat_key in ['Silicon', 'SiN', 'Polymer', 'Vacuum']:
-    if mat_key not in results:
-        continue
-    r = results[mat_key]
-    m = materials[mat_key]
-    print(f"{m['label']}: Peak |E| = {r['max_E']:.2e} V/m")
-
-print()
 print("Output files:")
-print("  • outputs/meep_material_fields.png")
-print("  • outputs/meep_material_energy.png")
-print("  • outputs/meep_material_stats.png")
+print("  Static plots:")
+print("    • outputs/meep_material_fields.png")
+print("    • outputs/meep_material_energy.png")
+print("    • outputs/meep_material_stats.png")
+print()
+print("  Animations:")
+for mat_key in ['Silicon', 'SiN', 'Polymer', 'Vacuum']:
+    print(f"    • outputs/meep_{mat_key.lower()}_animation.mp4")
