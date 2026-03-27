@@ -46,8 +46,8 @@ python3 analysis/hf_pipeline.py        # full pipeline
 │   ├── shanhartcalc.py
 │   └── shanhartcalcV2.py           # water-filling
 ├── simulations/                     # Meep sims
-├── data/                            # outputs
-├── figures/                         # publication plots
+├── data/                            # outputs, should eventually be moved to figures. 
+├── figures/                         # General Plots. Maybe subfolder..?
 └── venv/                            # python env (legacy)
 ```
 
@@ -103,4 +103,4 @@ git push origin main
 
 ## Status
 
-Meep working. Ready for design iteration.
+Cleaning Stuff Up. TODO: dedicated TODO list. 
