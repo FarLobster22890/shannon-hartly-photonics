@@ -22,16 +22,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-# -------------------------
 # Physical constants
-# -------------------------
 k_B = 1.38e-23      # Boltzmann constant (J/K)
 T0 = 300            # Ambient temperature (K)
 B = 100e9           # Bandwidth (Hz) - 100 GHz for optical
 
-# -------------------------
 # Model parameters
-# -------------------------
 # Absorption: fraction of power converted to heat
 alpha = 0.10        # 10% absorption (lossy waveguide or intentionally absorbing)
 
@@ -84,7 +80,6 @@ C_limit = B * np.log2(1 + 1/beta) if beta > 0 else np.inf
 # Find optimal power (where dC/dP ≈ 0 for thermal case)
 # Derivative: dC/dP = B/ln(2) * d/dP[ln(1 + P/(N0+βP))]
 # Setting to zero and solving... actually it's monotonic but saturates
-# Let's find where we get 90% of the limit
 idx_90 = np.argmin(np.abs(C_thermal - 0.9 * C_limit))
 P_90 = P[idx_90]
 
@@ -94,9 +89,8 @@ print(f"Power for 90% of limit: {P_90*1e3:.2f} mW")
 print(f"At 1 mW: C_standard = {np.interp(1e-3, P, C_standard)/1e9:.2f} Gb/s, C_thermal = {np.interp(1e-3, P, C_thermal)/1e9:.2f} Gb/s")
 print(f"At 100 mW: C_standard = {np.interp(0.1, P, C_standard)/1e9:.2f} Gb/s, C_thermal = {np.interp(0.1, P, C_thermal)/1e9:.2f} Gb/s")
 
-# -------------------------
 # Plotting
-# -------------------------
+
 fig = plt.figure(figsize=(14, 10))
 gs = GridSpec(2, 2, figure=fig, hspace=0.3, wspace=0.3)
 
@@ -106,7 +100,7 @@ c_thermal = '#e74c3c'   # red
 c_temp = '#3498db'      # blue
 c_noise = '#9b59b6'     # purple
 
-# --- Plot 1: Temperature vs Power ---
+# Plot 1: Temp vs Power
 ax1 = fig.add_subplot(gs[0, 0])
 ax1.semilogx(P * 1e3, T, color=c_temp, linewidth=2)
 ax1.axhline(T0, color='gray', linestyle='--', alpha=0.5, label=f'Ambient ({T0} K)')
@@ -117,7 +111,7 @@ ax1.grid(True, alpha=0.3)
 ax1.legend()
 ax1.set_xlim(P[0]*1e3, P[-1]*1e3)
 
-# --- Plot 2: Noise Power vs Power ---
+# Plot 2: Noise Power vs Power
 ax2 = fig.add_subplot(gs[0, 1])
 ax2.loglog(P * 1e3, N * 1e12, color=c_noise, linewidth=2, label='Thermal noise N(P)')
 ax2.axhline(N0 * 1e12, color='gray', linestyle='--', alpha=0.5, label=f'Base noise N₀ ({N0*1e12:.2f} pW)')
