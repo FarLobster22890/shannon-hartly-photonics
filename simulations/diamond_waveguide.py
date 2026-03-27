@@ -9,10 +9,9 @@ import meep as mp
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -------------------------
 # Physical parameters
-# -------------------------
-# Units: 1 Meep unit = 1 µm
+
+# [[For personal reference]] Units: 1 Meep unit = 1 µm
 
 # Diamond properties
 n_diamond = 2.4       # refractive index at visible wavelengths
@@ -35,9 +34,7 @@ sx = wg_length + 2*dpml
 sy = wg_width + 2*pad_y + 2*dpml
 cell = mp.Vector3(sx, sy, 0)
 
-# -------------------------
 # Materials and geometry
-# -------------------------
 diamond = mp.Medium(index=n_diamond)
 
 geometry = [
@@ -128,9 +125,7 @@ print(f"\nResults:")
 print(f"  Peak transmission: {np.max(T):.3f}")
 print(f"  Transmission at {wvl*1000:.0f} nm: {T[len(T)//2]:.3f}")
 
-# -------------------------
 # Plotting
-# -------------------------
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
 # Dielectric profile
@@ -179,3 +174,5 @@ plt.tight_layout()
 plt.savefig('diamond_waveguide_results.png', dpi=150)
 print(f"\nSaved: diamond_waveguide_results.png")
 plt.show()
+
+#**Does it output into /Outputs?** Ughhhhhhh.

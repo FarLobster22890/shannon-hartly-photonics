@@ -1,11 +1,8 @@
 import numpy as np
 import meep as mp
 
-# ------------------------------------------------------------
 # 0) PHYSICAL UNIT SETTING (THIS is what makes it "real units")
-# ------------------------------------------------------------
-# Choose what 1 Meep length-unit equals in meters.
-# Common for photonics: 1 unit = 1 micron.
+
 L0_m = 1.0e-6  # meters per Meep unit (change if you want)
 
 c0 = 299_792_458.0  # m/s
@@ -24,9 +21,8 @@ def meep_freq_to_wavelength_m(f_meep):
 def meep_freq_to_wavelength_um(f_meep):
     return meep_freq_to_wavelength_m(f_meep) * 1e6
 
-# ------------------------------------------------------------
-# 1) SIM PARAMETERS (Meep units, but interpreted via L0_m)
-# ------------------------------------------------------------
+# 1) Sim Params (Meep units, but interpreted via L0_m)
+
 resolution = 120          # pixels per Meep unit
 dpml = 1.0               # PML thickness (Meep units)
 sx, sy = 150, 80          # cell size (Meep units), excluding PML
@@ -36,7 +32,7 @@ fcen = 0.15
 df   = 0.10
 nfreq = 401
 
-# Materials and geometry (Meep units -> physical via L0_m)
+# Mats and geometry (Meep units -> physical via L0_m)
 n_core = 3.4
 wg_w = 1.0
 
@@ -47,9 +43,7 @@ src_x = -0.5*sx + 2.0
 in_flux_x  = -2.0
 out_flux_x = +5.0
 
-# ------------------------------------------------------------
 # 2) GEOMETRY
-# ------------------------------------------------------------
 def make_geometry(include_resonator: bool):
     wg = mp.Block(
         size=mp.Vector3(mp.inf, wg_w, mp.inf),
@@ -69,9 +63,7 @@ def make_geometry(include_resonator: bool):
 
     return geom
 
-# ------------------------------------------------------------
-# 3) RUN ONCE: return freqs + (in_flux_spectrum, out_flux_spectrum)
-# ------------------------------------------------------------
+# 3) **RUN ONCE** return freqs + (in_flux_spectrum, out_flux_spectrum)
 def run_transmission(include_resonator: bool):
     cell = mp.Vector3(sx, sy, 0)
     pml_layers = [mp.PML(dpml)]
@@ -112,9 +104,8 @@ def run_transmission(include_resonator: bool):
 
     return freqs, in_spec, out_spec
 
-# ------------------------------------------------------------
 # 4) MAIN PIPELINE: baseline + device -> clean |H(f)|^2
-# ------------------------------------------------------------
+
 def main():
     # Baseline
     freqs0, in0, out0 = run_transmission(include_resonator=False)
@@ -138,14 +129,14 @@ def main():
     f_thz = meep_freq_to_thz(f_meep)
     lam_um = meep_freq_to_wavelength_um(f_meep)
 
-    # Identify resonance-like minima (quick-and-dirty)
+    # Identify resonance-like minima (Quick, before I loose my mind.)
     idx_min = int(np.argmin(H2))
     fmin_thz = float(f_thz[idx_min])
     lmin_um = float(lam_um[idx_min])
     h2min = float(H2[idx_min])
 
     if mp.am_master():
-        # Save everything for later use in Shannon/water-filling
+        # Save everything for later use in Shannon/water-filling. Optimize Later..? 
         np.savez(
             "meep_channel_physical.npz",
             L0_m=L0_m,
@@ -192,7 +183,7 @@ def main():
         plt.close()
 
         # (C) Normalized transmission vs wavelength (µm)
-        # Wavelength axis is reversed/nonuniform; sort by wavelength for a nice plot.
+        # Wavelength axis is reversed/nonuniform, sort by wavelength for a nice plot.
         order = np.argsort(lam_um)
         plt.figure()
         plt.plot(lam_um[order], H2[order])
