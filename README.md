@@ -13,7 +13,7 @@ The goal is to move beyond idealized models and build the frequency response dir
 
 ## Getting Started
 
-### Meep (Current focus)
+### Meep 
 
 ```bash
 cd ~/Programming/shannon-hartley-photonics
