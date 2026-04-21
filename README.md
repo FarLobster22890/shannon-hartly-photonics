@@ -13,7 +13,7 @@ The goal is to move beyond idealized models and build the frequency response dir
 
 ## Getting Started
 
-### Meep 
+### Meep
 
 ```bash
 cd ~/Programming/shannon-hartley-photonics
@@ -69,11 +69,13 @@ python3 examples/meep_material_comparison.py
 ## Theory (Quick Reference)
 
 **Shannon Capacity for frequency-selective channels:**
+
 ```
 C = ∫ log₂(1 + |H(f)|² · S(f) / N(f)) df
 ```
 
 **Water-filling solution:**
+
 ```
 S(f) = max(0, μ - N(f)/|H(f)|²)
 ```
@@ -88,6 +90,7 @@ S(f) = max(0, μ - N(f)/|H(f)|²)
 ## Development
 
 Make changes, test, commit:
+
 ```bash
 python3 examples/meep_material_comparison.py
 git add .
@@ -97,10 +100,10 @@ git push origin main
 
 ## References
 
-- Meep: https://meep.readthedocs.io
-- MPI: https://www.open-mpi.org/
+- Meep: <https://meep.readthedocs.io>
+- MPI: <https://www.open-mpi.org/>
 - Shannon (1948): "A Mathematical Theory of Communication"
 
 ## Status
 
-Cleaning Stuff Up. TODO: dedicated TODO list. 
+Cleaning Stuff Up. TODO: dedicated TODO list.
